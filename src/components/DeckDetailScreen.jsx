@@ -4,6 +4,7 @@ import { useWords, useAddWord, useUpdateWord, useDeleteWord } from '../hooks/use
 import { useDeleteDeck } from '../hooks/useDeckManagement.js';
 import WordModal from './WordModal.jsx';
 import WordList from './WordList.jsx';
+import QuickImportModal from './QuickImportModal.jsx';
 
 export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
   const [deck, setDeck] = useState(null);
@@ -18,6 +19,9 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
   // Word Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWord, setEditingWord] = useState(null);
+  
+  // Quick Import State
+  const [isQuickImportOpen, setIsQuickImportOpen] = useState(false);
 
   const { words, loading: wordsLoading, error: wordsError, refresh: refreshWords } = useWords(deckId);
   
@@ -83,6 +87,23 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
       await updateWordItem(deckId, editingWord.id, wordData);
     } else {
       await addWordItem(wordData);
+    }
+  };
+
+  const handleQuickImport = async (wordsToImport) => {
+    try {
+      // วนลูปเพิ่มคำศัพท์ทีละคำ
+      for (const wordData of wordsToImport) {
+        // ตรวจสอบคำซ้ำเบื้องต้น (Case insensitive)
+        const isDuplicate = words.some(w => w.word.toLowerCase() === wordData.word.toLowerCase());
+        if (!isDuplicate) {
+          await addWordItem(wordData);
+        }
+      }
+      refreshWords();
+    } catch (err) {
+      console.error('Import failed:', err);
+      throw new Error('เกิดข้อผิดพลาดในการนำเข้าข้อมูลบางส่วน');
     }
   };
 
@@ -158,20 +179,29 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 mb-4">
+        <div className="flex flex-col gap-3 mb-4">
           <button 
             onClick={() => onStartQuiz && onStartQuiz(deckId, { enableAudio, audioTiming })}
             disabled={totalWords === 0}
-            className="flex-1 bg-indigo-600 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-lg"
           >
             ▶️ เริ่มทดสอบ (Quiz)
           </button>
-          <button 
-            onClick={handleAddClick}
-            className="bg-white border border-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-xl shadow-sm hover:bg-gray-50 transition"
-          >
-            + เพิ่มคำศัพท์
-          </button>
+          
+          <div className="flex gap-2">
+            <button 
+              onClick={handleAddClick}
+              className="flex-1 bg-white border border-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-xl shadow-sm hover:bg-gray-50 transition flex items-center justify-center gap-2"
+            >
+              <span>+ เพิ่มทีละคำ</span>
+            </button>
+            <button 
+              onClick={() => setIsQuickImportOpen(true)}
+              className="flex-1 bg-white border border-indigo-200 text-indigo-600 font-semibold py-3 px-4 rounded-xl shadow-sm hover:bg-indigo-50 transition flex items-center justify-center gap-2"
+            >
+              <span>📥 นำเข้าด่วน (Bulk)</span>
+            </button>
+          </div>
         </div>
 
         {/* Quiz Settings Toggle */}
@@ -264,6 +294,13 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
         onSave={handleSaveWord}
         initialWord={editingWord}
         deckId={deckId}
+      />
+
+      {/* Quick Import Modal */}
+      <QuickImportModal 
+        isOpen={isQuickImportOpen}
+        onClose={() => setIsQuickImportOpen(false)}
+        onImport={handleQuickImport}
       />
     </div>
   );
