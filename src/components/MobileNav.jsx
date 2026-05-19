@@ -1,15 +1,16 @@
-import React from 'react';
+import { Library, BarChart2, User } from 'lucide-react';
 
 export default function MobileNav({ currentScreen, onNavigate }) {
   const navItems = [
-    { id: 'home', label: 'คลังคำศัพท์', icon: '📚' },
-    { id: 'stats', label: 'สถิติ', icon: '📊' },
-    { id: 'profile', label: 'โปรไฟล์', icon: '👤' },
+    { id: 'home', label: 'Library', icon: Library },
+    { id: 'stats', label: 'Stats', icon: BarChart2 },
+    { id: 'profile', label: 'Profile', icon: User },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-[60px] flex justify-around items-center px-2 z-40 max-w-md mx-auto md:max-w-2xl shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+    <div className="mobile-nav fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-slate-100 h-[64px] flex justify-around items-center px-4 z-30 max-w-md mx-auto md:max-w-2xl safe-bottom transition-all duration-300">
       {navItems.map(item => {
+        const Icon = item.icon;
         // active state includes sub-screens for home
         const isActive = currentScreen === item.id || 
                          (item.id === 'home' && ['deck-detail', 'quiz', 'summary'].includes(currentScreen));
@@ -17,12 +18,13 @@ export default function MobileNav({ currentScreen, onNavigate }) {
           <button
             key={item.id}
             onClick={() => onNavigate(item.id)}
-            className={`flex flex-col items-center justify-center w-full h-full transition-colors ${isActive ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-500'}`}
+            className={`flex flex-col items-center justify-center flex-1 h-full transition-all relative ${isActive ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}
           >
-            <span className={`text-2xl mb-0.5 transition-transform ${isActive ? 'scale-110' : ''}`}>
-              {item.icon}
-            </span>
-            <span className={`text-[10px] font-medium ${isActive ? 'font-bold' : ''}`}>
+            {isActive && (
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-primary rounded-b-full animate-fade-in" />
+            )}
+            <Icon size={20} className={`mb-1 transition-transform ${isActive ? 'scale-110' : ''}`} />
+            <span className={`text-[10px] font-bold uppercase tracking-wider ${isActive ? 'opacity-100' : 'opacity-60'}`}>
               {item.label}
             </span>
           </button>

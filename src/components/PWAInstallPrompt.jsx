@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { initInstallPrompt, requestInstallPrompt } from '../utils/pwaSetup.js';
 
 export default function PWAInstallPrompt() {
@@ -39,23 +39,23 @@ export default function PWAInstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 bg-indigo-600 text-white p-4 rounded-2xl shadow-xl flex items-center justify-between z-50 animate-fade-in border-2 border-indigo-400">
+    <div className="fixed bottom-24 left-6 right-6 bg-slate-900 text-white p-5 rounded-[30px] shadow-2xl shadow-slate-900/40 flex items-center justify-between z-50 animate-pop border border-slate-800">
       <div className="flex flex-col">
-        <span className="font-bold">Vocab Buddy</span>
-        <span className="text-xs text-indigo-100">ติดตั้งแอปเพื่อใช้แบบออฟไลน์ได้</span>
+        <span className="font-black tracking-tight">Vocab Buddy</span>
+        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Install for offline access</span>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <button 
           onClick={handleDismiss}
-          className="text-indigo-200 hover:text-white text-sm"
+          className="text-slate-500 hover:text-white text-xs font-bold"
         >
-          ไว้ทีหลัง
+          LATER
         </button>
         <button 
           onClick={handleInstall}
-          className="bg-white text-indigo-600 px-4 py-2 rounded-xl text-sm font-bold shadow-sm active:scale-95 transition"
+          className="bg-primary text-white px-5 py-2.5 rounded-2xl text-xs font-black shadow-lg shadow-primary/20 active:scale-95 transition"
         >
-          ติดตั้งเลย
+          INSTALL
         </button>
       </div>
     </div>

@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 
-const GRADIENTS = [
-  'bg-gradient-to-r from-blue-500 to-indigo-600',
-  'bg-gradient-to-r from-emerald-500 to-teal-600',
-  'bg-gradient-to-r from-orange-400 to-emerald-500',
-  'bg-gradient-to-r from-rose-400 to-red-500',
-  'bg-gradient-to-r from-fuchsia-500 to-pink-600',
-  'bg-gradient-to-r from-violet-500 to-purple-600',
+const COLORS = [
+  'bg-slate-900',
+  'bg-primary',
+  'bg-emerald-500',
+  'bg-orange-400',
+  'bg-red-400',
+  'bg-violet-500',
 ];
 
 const LANGUAGES = [
@@ -20,9 +21,18 @@ export default function DeckModal({ isOpen, onClose, onSave, initialDeck = null 
   const [name, setName] = useState(initialDeck?.name || '');
   const [description, setDescription] = useState(initialDeck?.description || '');
   const [language, setLanguage] = useState(initialDeck?.language || 'en');
-  const [color, setColor] = useState(initialDeck?.color || GRADIENTS[0]);
+  const [color, setColor] = useState(initialDeck?.color || COLORS[0]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    return () => document.body.classList.remove('modal-open');
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -32,11 +42,7 @@ export default function DeckModal({ isOpen, onClose, onSave, initialDeck = null 
       setError('กรุณากรอกชื่อ Deck');
       return;
     }
-    if (name.length > 100) {
-      setError('ชื่อ Deck ต้องไม่เกิน 100 ตัวอักษร');
-      return;
-    }
-
+    
     setLoading(true);
     setError('');
     
@@ -58,82 +64,81 @@ export default function DeckModal({ isOpen, onClose, onSave, initialDeck = null 
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">
-          {initialDeck ? 'แก้ไข Deck' : 'สร้าง Deck ใหม่'}
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6 z-50 animate-fade-in">
+      <div className="bg-white rounded-[40px] p-8 w-full max-w-sm shadow-2xl animate-pop relative">
+        <button 
+          onClick={onClose}
+          className="absolute top-6 right-6 p-2 text-slate-300 hover:text-slate-500 transition-colors"
+        >
+          <X size={20} />
+        </button>
+
+        <h2 className="text-2xl font-black mb-6 text-slate-900 tracking-tight">
+          {initialDeck ? 'Edit Deck' : 'New Deck'}
         </h2>
         
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+        {error && <p className="text-red-500 text-xs font-bold mb-4 bg-red-50 p-3 rounded-xl">{error}</p>}
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อ Deck <span className="text-red-500">*</span></label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Deck Name</label>
             <input 
               type="text" 
-              className="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              placeholder="เช่น คำศัพท์ผลไม้, บทเรียนที่ 1"
+              className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary/20 focus:outline-none transition-all"
+              placeholder="e.g. Travel Vocabulary"
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={100}
+              required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">คำอธิบาย</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Description</label>
             <textarea 
-              className="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              placeholder="อธิบายเพิ่มเติม (ไม่บังคับ)"
+              className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary/20 focus:outline-none transition-all"
+              placeholder="What is this deck about?"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">ภาษา</label>
-            <select 
-              className="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-            >
-              {LANGUAGES.map(lang => (
-                <option key={lang.value} value={lang.value}>{lang.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">สีพื้นหลัง</label>
-            <div className="flex gap-2 flex-wrap">
-              {GRADIENTS.map(grad => (
-                <button
-                  key={grad}
-                  type="button"
-                  onClick={() => setColor(grad)}
-                  className={`w-8 h-8 rounded-full ${grad} ${color === grad ? 'ring-4 ring-indigo-300 ring-offset-2' : ''}`}
-                />
-              ))}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Language</label>
+              <select 
+                className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 focus:bg-white focus:outline-none appearance-none cursor-pointer transition-all"
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+              >
+                {LANGUAGES.map(lang => (
+                  <option key={lang.value} value={lang.value}>{lang.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Accent Color</label>
+              <div className="flex gap-2 flex-wrap items-center h-full pb-2">
+                {COLORS.map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setColor(c)}
+                    className={`w-6 h-6 rounded-full ${c} ${color === c ? 'ring-4 ring-primary/10 ring-offset-2' : 'scale-90 opacity-60'}`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 mt-6">
-            <button 
-              type="button" 
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg transition"
-              disabled={loading}
-            >
-              ยกเลิก
-            </button>
-            <button 
-              type="submit" 
-              className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
-              disabled={loading}
-            >
-              {loading ? 'กำลังบันทึก...' : 'บันทึก'}
-            </button>
-          </div>
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-slate-900 text-white py-5 rounded-3xl font-black shadow-xl shadow-slate-900/10 hover:bg-black transition-all active:scale-[0.98] disabled:opacity-50 mt-4"
+          >
+            {loading ? 'SAVING...' : 'SAVE DECK'}
+          </button>
         </form>
       </div>
     </div>

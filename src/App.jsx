@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import PWAInstallPrompt from './components/PWAInstallPrompt.jsx';
 import MobileNav from './components/MobileNav.jsx';
-import PrivateRoute from './components/PrivateRoute.jsx';
 
 // Screens
 import LoginScreen from './components/LoginScreen.jsx';
@@ -42,8 +41,8 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
       </div>
     );
   }
@@ -51,7 +50,7 @@ function AppContent() {
   // --- Unauthenticated Routes ---
   if (!user) {
     return (
-      <div className="max-w-md mx-auto md:max-w-2xl bg-gray-50 min-h-screen shadow-lg relative">
+      <div className="max-w-md mx-auto md:max-w-2xl bg-white min-h-screen shadow-2xl shadow-slate-200 relative overflow-hidden">
         {currentScreen === 'signup' 
           ? <SignUpScreen onBack={() => navigateTo('login')} />
           : <LoginScreen onSignUp={() => navigateTo('signup')} />
@@ -62,7 +61,7 @@ function AppContent() {
 
   // --- Authenticated Routes ---
   return (
-    <div className="max-w-md mx-auto md:max-w-2xl bg-gray-50 min-h-screen shadow-[0_0_20px_rgba(0,0,0,0.05)] relative flex flex-col">
+    <div className="max-w-md mx-auto md:max-w-2xl bg-white min-h-screen shadow-2xl shadow-slate-200 relative flex flex-col overflow-hidden">
       <PWAInstallPrompt />
       
       {/* Content Area with padding for bottom nav */}

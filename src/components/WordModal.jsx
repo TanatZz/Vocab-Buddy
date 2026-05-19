@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 
 const LANGUAGES = [
   { value: 'en', label: 'English' },
@@ -7,7 +8,7 @@ const LANGUAGES = [
   { value: 'th', label: 'Thai' },
 ];
 
-export default function WordModal({ isOpen, onClose, onSave, initialWord = null, deckId }) {
+export default function WordModal({ isOpen, onClose, onSave, initialWord = null }) {
   const [word, setWord] = useState(initialWord?.word || '');
   const [meaning, setMeaning] = useState(initialWord?.meaning || '');
   const [pronunciation, setPronunciation] = useState(initialWord?.pronunciation || '');
@@ -15,24 +16,21 @@ export default function WordModal({ isOpen, onClose, onSave, initialWord = null,
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    return () => document.body.classList.remove('modal-open');
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!word.trim()) {
-      setError('กรุณากรอกคำศัพท์');
-      return;
-    }
-    if (word.length > 100) {
-      setError('คำศัพท์ต้องไม่เกิน 100 ตัวอักษร');
-      return;
-    }
-    if (!meaning.trim()) {
-      setError('กรุณากรอกคำแปล');
-      return;
-    }
-    if (meaning.length > 200) {
-      setError('คำแปลต้องไม่เกิน 200 ตัวอักษร');
+    if (!word.trim() || !meaning.trim()) {
+      setError('กรุณากรอกข้อมูลให้ครบถ้วน');
       return;
     }
 
@@ -47,12 +45,10 @@ export default function WordModal({ isOpen, onClose, onSave, initialWord = null,
         language
       });
       
-      // Reset form if it's a new word to allow continuous adding
       if (!initialWord) {
         setWord('');
         setMeaning('');
         setPronunciation('');
-        // Keep language the same
       } else {
         onClose();
       }
@@ -64,54 +60,61 @@ export default function WordModal({ isOpen, onClose, onSave, initialWord = null,
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">
-          {initialWord ? 'แก้ไขคำศัพท์' : 'เพิ่มคำศัพท์ใหม่'}
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6 z-50 animate-fade-in">
+      <div className="bg-white rounded-[40px] p-8 w-full max-w-sm shadow-2xl animate-pop relative">
+        <button 
+          onClick={onClose}
+          className="absolute top-6 right-6 p-2 text-slate-300 hover:text-slate-500 transition-colors"
+        >
+          <X size={20} />
+        </button>
+
+        <h2 className="text-2xl font-black mb-6 text-slate-900 tracking-tight">
+          {initialWord ? 'Edit Word' : 'New Word'}
         </h2>
         
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+        {error && <p className="text-red-500 text-xs font-bold mb-4 bg-red-50 p-3 rounded-xl">{error}</p>}
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">คำศัพท์ <span className="text-red-500">*</span></label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Word</label>
             <input 
               type="text" 
-              className="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              placeholder="เช่น Apple"
+              className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary/20 focus:outline-none transition-all"
+              placeholder="e.g. Resilience"
               value={word}
               onChange={(e) => setWord(e.target.value)}
-              maxLength={100}
+              required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">คำแปล (ภาษาไทย) <span className="text-red-500">*</span></label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Meaning</label>
             <input 
               type="text" 
-              className="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              placeholder="เช่น แอปเปิ้ล"
+              className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary/20 focus:outline-none transition-all"
+              placeholder="e.g. ความยืดหยุ่น"
               value={meaning}
               onChange={(e) => setMeaning(e.target.value)}
-              maxLength={200}
+              required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">คำอ่าน (ไม่บังคับ)</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Pronunciation</label>
             <input 
               type="text" 
-              className="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              placeholder="เช่น แอพ-เปิ้ล หรือ ˈæpəl"
+              className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary/20 focus:outline-none transition-all text-xs"
+              placeholder="e.g. rɪˈzɪliəns"
               value={pronunciation}
               onChange={(e) => setPronunciation(e.target.value)}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">ภาษา</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Language</label>
             <select 
-              className="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 focus:bg-white focus:outline-none appearance-none cursor-pointer transition-all"
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
             >
@@ -121,23 +124,13 @@ export default function WordModal({ isOpen, onClose, onSave, initialWord = null,
             </select>
           </div>
 
-          <div className="flex justify-end gap-3 mt-6">
-            <button 
-              type="button" 
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg transition"
-              disabled={loading}
-            >
-              ยกเลิก
-            </button>
-            <button 
-              type="submit" 
-              className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
-              disabled={loading}
-            >
-              {loading ? 'กำลังบันทึก...' : 'บันทึก'}
-            </button>
-          </div>
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-slate-900 text-white py-5 rounded-3xl font-black shadow-xl shadow-slate-900/10 hover:bg-black transition-all active:scale-[0.98] disabled:opacity-50 mt-4"
+          >
+            {loading ? 'SAVING...' : 'SAVE WORD'}
+          </button>
         </form>
       </div>
     </div>

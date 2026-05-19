@@ -1,4 +1,4 @@
-import React from 'react';
+import { Target, BookOpen, Flame, TrendingDown, TrendingUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useStats } from '../hooks/useStats.js';
 import ProgressCard from './ProgressCard.jsx';
@@ -9,111 +9,120 @@ export default function StatsScreen() {
   const { stats, loading, error } = useStats(user?.uid);
 
   if (!user) {
-    return <div className="p-8 text-center text-gray-500">กรุณาเข้าสู่ระบบเพื่อดูสถิติ</div>;
+    return <div className="p-8 text-center text-slate-500 font-medium">Please login to view statistics.</div>;
   }
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
       </div>
     );
   }
 
   if (error || !stats) {
-    return <div className="p-8 text-center text-red-500">{error || 'ไม่พบข้อมูลสถิติ'}</div>;
+    return <div className="p-8 text-center text-red-500 font-medium">{error || 'สถิติไม่พร้อมใช้งาน'}</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-white pb-24 animate-fade-in">
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-6 rounded-b-3xl shadow-md">
-        <h1 className="text-2xl font-bold">📊 สถิติการเรียนรู้</h1>
-        <p className="text-indigo-100 mt-1">ติดตามความก้าวหน้าของคุณ</p>
-      </div>
+      <header className="px-6 pt-10 pb-6">
+        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Performance</h1>
+        <p className="text-slate-500 mt-1 font-medium">ติดตามความก้าวหน้าของคุณ</p>
+      </header>
 
-      <div className="p-4 mt-2 space-y-4">
+      <div className="px-6 space-y-6">
         
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            <ProgressCard 
+              title="Accuracy" 
+              value={`${stats.accuracy}%`}
+              icon={Target}
+              color="text-primary"
+              bg="bg-primary/5"
+            />
+            <ProgressCard 
+              title="Learned" 
+              value={stats.learnedWords}
+              subtitle={`of ${stats.totalWords}`}
+              icon={BookOpen}
+              color="text-green-600"
+              bg="bg-green-50"
+            />
+          </div>
           <ProgressCard 
-            title="ความแม่นยำเฉลี่ย" 
-            value={`${stats.accuracy}%`}
-            icon="🎯"
-            color="green"
-          />
-          <ProgressCard 
-            title="คำศัพท์ที่เรียนแล้ว" 
-            value={stats.learnedWords}
-            subtitle={`/ ${stats.totalWords} คำ`}
-            icon="📚"
-            color="blue"
-          />
-          <ProgressCard 
-            title="ทำแบบทดสอบติดต่อกัน" 
+            title="Current Streak" 
             value={`${stats.streak.current}`}
-            subtitle="ครั้ง"
-            icon="🔥"
-            color="red"
+            subtitle="Practice sessions in a row"
+            icon={Flame}
+            color="text-orange-500"
+            bg="bg-orange-50"
+            fullWidth
           />
         </div>
 
         {/* Charts */}
         <DifficultyBreakdown breakdown={stats.breakdown} />
 
-        {/* Top Words */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          
+        {/* Top Words Section */}
+        <div className="space-y-6">
           {/* Hard Words */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-             <h3 className="text-lg font-bold text-red-600 mb-4 flex items-center gap-2">
-                <span>📉</span> คำศัพท์ที่ควรทวนซ้ำ
-             </h3>
+          <section>
+             <div className="flex items-center gap-2 mb-4">
+                <TrendingDown className="text-red-400" size={18} />
+                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Needs Review</h3>
+             </div>
              {stats.topHard.length === 0 ? (
-               <p className="text-gray-500 text-sm">ยังไม่มีคำศัพท์ที่ตอบผิดบ่อย</p>
+               <div className="bg-slate-50 rounded-2xl p-6 text-center text-slate-400 text-sm font-medium">
+                 ยังไม่มีข้อมูลคำศัพท์ที่ยาก
+               </div>
              ) : (
-               <ul className="space-y-3">
+               <div className="space-y-2">
                  {stats.topHard.map(w => (
-                   <li key={w.id} className="flex justify-between items-center bg-red-50 px-3 py-2 rounded-lg">
+                   <div key={w.id} className="flex justify-between items-center bg-white border border-slate-50 p-4 rounded-2xl shadow-sm">
                      <div>
-                       <span className="font-bold text-gray-800">{w.word}</span>
-                       <span className="text-sm text-gray-500 ml-2">{w.meaning}</span>
+                       <div className="font-bold text-slate-900">{w.word}</div>
+                       <div className="text-xs text-slate-400 font-medium">{w.meaning}</div>
                      </div>
-                     <span className="text-xs font-bold text-red-500 bg-white px-2 py-1 rounded-md">
-                       ถูก {w.correctCount || 0}/{w.reviewCount || 0}
-                     </span>
-                   </li>
+                     <div className="text-[10px] font-black text-red-500 bg-red-50 px-2.5 py-1 rounded-lg uppercase">
+                       {Math.round((w.correctCount / w.reviewCount) * 100)}% ACC
+                     </div>
+                   </div>
                  ))}
-               </ul>
+               </div>
              )}
-          </div>
+          </section>
 
           {/* Easy Words */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-             <h3 className="text-lg font-bold text-green-600 mb-4 flex items-center gap-2">
-                <span>📈</span> คำศัพท์ที่จำได้แม่น
-             </h3>
+          <section>
+             <div className="flex items-center gap-2 mb-4">
+                <TrendingUp className="text-green-500" size={18} />
+                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Mastered</h3>
+             </div>
              {stats.topEasy.length === 0 ? (
-               <p className="text-gray-500 text-sm">ต้องทบทวนเพิ่มเพื่อให้ระบบจำสถิติ</p>
+               <div className="bg-slate-50 rounded-2xl p-6 text-center text-slate-400 text-sm font-medium">
+                 ฝึกฝนเพิ่มขึ้นเพื่อบันทึกสถิติ
+               </div>
              ) : (
-               <ul className="space-y-3">
+               <div className="space-y-2">
                  {stats.topEasy.map(w => (
-                   <li key={w.id} className="flex justify-between items-center bg-green-50 px-3 py-2 rounded-lg">
+                   <div key={w.id} className="flex justify-between items-center bg-white border border-slate-50 p-4 rounded-2xl shadow-sm">
                      <div>
-                       <span className="font-bold text-gray-800">{w.word}</span>
-                       <span className="text-sm text-gray-500 ml-2">{w.meaning}</span>
+                       <div className="font-bold text-slate-900">{w.word}</div>
+                       <div className="text-xs text-slate-400 font-medium">{w.meaning}</div>
                      </div>
-                     <span className="text-xs font-bold text-green-600 bg-white px-2 py-1 rounded-md">
-                       แม่นยำ
-                     </span>
-                   </li>
+                     <div className="text-[10px] font-black text-green-600 bg-green-50 px-2.5 py-1 rounded-lg uppercase">
+                       Mastered
+                     </div>
+                   </div>
                  ))}
-               </ul>
+               </div>
              )}
-          </div>
-
+          </section>
         </div>
-
       </div>
     </div>
   );
