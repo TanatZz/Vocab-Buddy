@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext.jsx';
 
 const COLORS = [
   'bg-slate-900',
@@ -18,6 +19,7 @@ const LANGUAGES = [
 ];
 
 export default function DeckModal({ isOpen, onClose, onSave, initialDeck = null }) {
+  const { isDarkMode } = useTheme();
   const [name, setName] = useState(initialDeck?.name || '');
   const [description, setDescription] = useState(initialDeck?.description || '');
   const [language, setLanguage] = useState(initialDeck?.language || 'en');
@@ -65,26 +67,46 @@ export default function DeckModal({ isOpen, onClose, onSave, initialDeck = null 
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-6 z-50 animate-fade-in">
-      <div className="bg-white rounded-[40px] p-8 w-full max-w-sm shadow-2xl animate-pop relative">
+      <div className={`rounded-[40px] p-8 w-full max-w-sm animate-pop relative border transition-all duration-300 ${
+        isDarkMode 
+          ? 'bg-slate-950 border-slate-900 shadow-none' 
+          : 'bg-white border-slate-50 shadow-2xl shadow-slate-200/50'
+      }`}>
         <button 
           onClick={onClose}
-          className="absolute top-6 right-6 p-2 text-slate-300 hover:text-slate-500 transition-colors"
+          className={`absolute top-6 right-6 p-2 transition-colors ${
+            isDarkMode ? 'text-slate-600 hover:text-slate-400' : 'text-slate-300 hover:text-slate-500'
+          }`}
         >
           <X size={20} />
         </button>
 
-        <h2 className="text-2xl font-black mb-6 text-slate-900 tracking-tight">
+        <h2 className={`text-2xl font-black mb-6 tracking-tight ${
+          isDarkMode ? 'text-white' : 'text-slate-900'
+        }`}>
           {initialDeck ? 'Edit Deck' : 'New Deck'}
         </h2>
         
-        {error && <p className="text-red-500 text-xs font-bold mb-4 bg-red-50 p-3 rounded-xl">{error}</p>}
+        {error && (
+          <p className={`text-xs font-bold mb-4 p-3 rounded-xl border ${
+            isDarkMode 
+              ? 'text-red-400 bg-red-950/20 border-red-900/30' 
+              : 'text-red-500 bg-red-50 border-red-100/50'
+          }`}>{error}</p>
+        )}
         
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Deck Name</label>
+            <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ${
+              isDarkMode ? 'text-slate-500' : 'text-slate-400'
+            }`}>Deck Name</label>
             <input 
               type="text" 
-              className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary/20 focus:outline-none transition-all"
+              className={`w-full p-4 rounded-2xl focus:ring-4 focus:ring-primary/5 focus:border-primary/20 focus:outline-none transition-all ${
+                isDarkMode 
+                  ? 'bg-slate-900 border border-slate-800 text-white focus:bg-slate-950' 
+                  : 'bg-slate-50 border border-slate-100 text-slate-900 focus:bg-white'
+              }`}
               placeholder="e.g. Travel Vocabulary"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -94,9 +116,15 @@ export default function DeckModal({ isOpen, onClose, onSave, initialDeck = null 
           </div>
 
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Description</label>
+            <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ${
+              isDarkMode ? 'text-slate-500' : 'text-slate-400'
+            }`}>Description</label>
             <textarea 
-              className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary/20 focus:outline-none transition-all"
+              className={`w-full p-4 rounded-2xl focus:ring-4 focus:ring-primary/5 focus:border-primary/20 focus:outline-none transition-all ${
+                isDarkMode 
+                  ? 'bg-slate-900 border border-slate-800 text-white focus:bg-slate-950' 
+                  : 'bg-slate-50 border border-slate-100 text-slate-900 focus:bg-white'
+              }`}
               placeholder="What is this deck about?"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -106,9 +134,15 @@ export default function DeckModal({ isOpen, onClose, onSave, initialDeck = null 
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Language</label>
+              <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ${
+                isDarkMode ? 'text-slate-500' : 'text-slate-400'
+              }`}>Language</label>
               <select 
-                className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 focus:bg-white focus:outline-none appearance-none cursor-pointer transition-all"
+                className={`w-full p-4 rounded-2xl text-sm font-bold focus:outline-none appearance-none cursor-pointer transition-all ${
+                  isDarkMode 
+                    ? 'bg-slate-900 border border-slate-800 text-slate-300 focus:bg-slate-950' 
+                    : 'bg-slate-50 border border-slate-100 text-slate-700 focus:bg-white'
+                }`}
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
               >
@@ -118,7 +152,9 @@ export default function DeckModal({ isOpen, onClose, onSave, initialDeck = null 
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Accent Color</label>
+              <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ${
+                isDarkMode ? 'text-slate-500' : 'text-slate-400'
+              }`}>Accent Color</label>
               <div className="flex gap-2 flex-wrap items-center h-full pb-2">
                 {COLORS.map(c => (
                   <button
@@ -135,7 +171,11 @@ export default function DeckModal({ isOpen, onClose, onSave, initialDeck = null 
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-slate-900 text-white py-5 rounded-3xl font-black shadow-xl shadow-slate-900/10 hover:bg-black transition-all active:scale-[0.98] disabled:opacity-50 mt-4"
+            className={`w-full py-5 rounded-3xl font-black transition-all active:scale-[0.98] disabled:opacity-50 mt-4 ${
+              isDarkMode 
+                ? 'bg-white text-slate-950 hover:bg-slate-100 shadow-xl shadow-white/5' 
+                : 'bg-slate-900 text-white hover:bg-black shadow-xl shadow-slate-900/10'
+            }`}
           >
             {loading ? 'SAVING...' : 'SAVE DECK'}
           </button>

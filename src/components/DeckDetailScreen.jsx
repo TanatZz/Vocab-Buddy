@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Plus, Download, Settings, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { getDeckById, updateDeck } from '../services/deckService.js';
+import { useTheme } from '../context/ThemeContext.jsx';
 import { useWords, useAddWord, useUpdateWord, useDeleteWord } from '../hooks/useWordManagement.js';
 import { useDeleteDeck } from '../hooks/useDeckManagement.js';
 import WordModal from './WordModal.jsx';
@@ -11,6 +12,7 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
   const [deck, setDeck] = useState(null);
   const [deckLoading, setDeckLoading] = useState(true);
   const [deckError, setDeckError] = useState(null);
+  const { isDarkMode } = useTheme();
   
   // Quiz Settings State
   const [enableAudio, setEnableAudio] = useState(true);
@@ -128,7 +130,9 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
 
   if (deckLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
+      <div className={`flex min-h-screen items-center justify-center transition-colors duration-300 ${
+        isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-white text-slate-900'
+      }`}>
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
       </div>
     );
@@ -136,7 +140,9 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
 
   if (deckError || !deck) {
     return (
-      <div className="min-h-screen bg-white p-6 text-center">
+      <div className={`min-h-screen p-6 text-center transition-colors duration-300 ${
+        isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-white text-slate-900'
+      }`}>
         <p className="text-red-500 my-10 font-medium">{deckError || 'ไม่พบข้อมูล Deck'}</p>
         <button onClick={onBack} className="text-primary font-bold flex items-center justify-center gap-2 mx-auto">
           <ArrowLeft size={18} /> กลับไปหน้าหลัก
@@ -151,16 +157,22 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
   const accuracy = reviewCount > 0 ? Math.round((correctCount / reviewCount) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-white pb-24 animate-fade-in">
+    <div className={`min-h-screen pb-24 animate-fade-in transition-colors duration-300 ${
+      isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-white text-slate-900'
+    }`}>
       {/* Navigation Header */}
-      <header className="px-4 py-4 flex items-center gap-4 sticky top-0 bg-white/80 backdrop-blur-md z-10 border-b border-slate-50">
-        <button onClick={onBack} className="p-2 hover:bg-slate-50 rounded-full transition text-slate-600">
+      <header className={`px-4 py-4 flex items-center gap-4 sticky top-0 backdrop-blur-md z-10 border-b transition-colors ${
+        isDarkMode ? 'bg-slate-950/80 border-slate-900 text-white' : 'bg-white/80 border-slate-100 text-slate-900'
+      }`}>
+        <button onClick={onBack} className={`p-2 rounded-full transition ${
+          isDarkMode ? 'hover:bg-slate-900 text-slate-400' : 'hover:bg-slate-50 text-slate-600'
+        }`}>
           <ArrowLeft size={24} />
         </button>
-        <h2 className="text-lg font-bold text-slate-900 truncate flex-1">{deck.name}</h2>
+        <h2 className={`text-lg font-bold truncate flex-1 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{deck.name}</h2>
         <button 
           onClick={handleDeleteDeck}
-          className="p-2 text-slate-300 hover:text-red-500 transition"
+          className={`p-2 transition ${isDarkMode ? 'text-slate-600 hover:text-red-400' : 'text-slate-300 hover:text-red-500'}`}
           aria-label="Delete Deck"
         >
           <Trash2 size={20} />
@@ -170,23 +182,23 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
       <div className="px-6 py-6">
         {/* Hero Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-extrabold text-slate-900 mb-2">{deck.name}</h1>
-          {deck.description && <p className="text-slate-500 font-medium leading-relaxed">{deck.description}</p>}
+          <h1 className={`text-3xl font-extrabold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{deck.name}</h1>
+          {deck.description && <p className={`font-medium leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{deck.description}</p>}
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-3 gap-3 mb-8">
-          <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100/50">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Words</div>
-            <div className="text-xl font-black text-slate-900">{totalWords}</div>
+          <div className={`p-4 rounded-3xl border ${isDarkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-100/50'}`}>
+            <div className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Words</div>
+            <div className={`text-xl font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>{totalWords}</div>
           </div>
-          <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100/50">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Correct</div>
-            <div className="text-xl font-black text-green-600">{correctCount}</div>
+          <div className={`p-4 rounded-3xl border ${isDarkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-100/50'}`}>
+            <div className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Correct</div>
+            <div className={`text-xl font-black ${isDarkMode ? 'text-emerald-400' : 'text-green-600'}`}>{correctCount}</div>
           </div>
-          <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100/50">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Accuracy</div>
-            <div className="text-xl font-black text-primary">{accuracy}%</div>
+          <div className={`p-4 rounded-3xl border ${isDarkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-100/50'}`}>
+            <div className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Accuracy</div>
+            <div className={`text-xl font-black ${isDarkMode ? 'text-indigo-400' : 'text-primary'}`}>{accuracy}%</div>
           </div>
         </div>
 
@@ -204,13 +216,21 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
           <div className="flex gap-3">
             <button 
               onClick={handleAddClick}
-              className="flex-1 bg-white border border-slate-200 text-slate-700 font-bold py-3.5 px-4 rounded-2xl hover:bg-slate-50 transition flex items-center justify-center gap-2 active:scale-95 text-sm"
+              className={`flex-1 border font-bold py-3.5 px-4 rounded-2xl transition flex items-center justify-center gap-2 active:scale-95 text-sm ${
+                isDarkMode 
+                  ? 'bg-slate-900 border-slate-800 hover:bg-slate-800/80 text-white' 
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
             >
               <Plus size={18} /> เพิ่มคำ
             </button>
             <button 
               onClick={() => setIsQuickImportOpen(true)}
-              className="flex-1 bg-slate-50 border border-slate-100 text-primary font-bold py-3.5 px-4 rounded-2xl hover:bg-primary/5 transition flex items-center justify-center gap-2 active:scale-95 text-sm"
+              className={`flex-1 border font-bold py-3.5 px-4 rounded-2xl transition flex items-center justify-center gap-2 active:scale-95 text-sm ${
+                isDarkMode 
+                  ? 'bg-slate-900/40 border-slate-850 hover:bg-slate-800/40 text-indigo-400' 
+                  : 'bg-slate-50 border-slate-100 text-primary hover:bg-primary/5'
+              }`}
             >
               <Download size={18} /> นำเข้าด่วน
             </button>
@@ -221,7 +241,13 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
         <div className="mb-8 overflow-hidden">
           <button 
             onClick={() => setShowQuizSettings(!showQuizSettings)}
-            className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${showQuizSettings ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-600 border border-slate-100'}`}
+            className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${
+              showQuizSettings 
+                ? 'bg-slate-900 text-white border border-slate-800' 
+                : isDarkMode 
+                  ? 'bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800' 
+                  : 'bg-slate-50 text-slate-600 border border-slate-100 hover:bg-slate-100'
+            }`}
           >
             <div className="flex items-center gap-2 font-bold text-sm">
               <Settings size={18} />
@@ -231,11 +257,15 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
           </button>
           
           {showQuizSettings && (
-            <div className="mt-2 p-5 bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/50 space-y-5 animate-slide-up">
+            <div className={`mt-2 p-5 rounded-2xl border shadow-xl transition-all space-y-5 animate-slide-up ${
+              isDarkMode 
+                ? 'bg-slate-900 border-slate-800 shadow-black/35' 
+                : 'bg-white border-slate-100 shadow-slate-200/50'
+            }`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-bold text-slate-800">ออกเสียงอัตโนมัติ</div>
-                  <div className="text-[11px] text-slate-400">ใช้ Text-to-Speech อ่านคำศัพท์</div>
+                  <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>ออกเสียงอัตโนมัติ</div>
+                  <div className={`text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>ใช้ Text-to-Speech อ่านคำศัพท์</div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input 
@@ -244,23 +274,41 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
                     onChange={(e) => handleUpdateQuizSettings({ enableAudio: e.target.checked })} 
                     className="sr-only peer" 
                   />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  <div className={`w-11 h-6 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary ${
+                    isDarkMode ? 'bg-slate-950' : 'bg-slate-200'
+                  }`}></div>
                 </label>
               </div>
 
               {enableAudio && (
-                <div className="pt-2 border-t border-slate-50">
-                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">จังหวะการอ่าน</div>
-                  <div className="flex p-1 bg-slate-50 rounded-xl">
+                <div className={`pt-2 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-50'}`}>
+                  <div className={`text-[11px] font-bold uppercase tracking-wider mb-3 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>จังหวะการอ่าน</div>
+                  <div className={`flex p-1 rounded-xl ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
                     <button 
                       onClick={() => handleUpdateQuizSettings({ audioTiming: 'before' })}
-                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition ${audioTiming === 'before' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition ${
+                        audioTiming === 'before' 
+                          ? isDarkMode 
+                            ? 'bg-slate-900 text-white shadow-sm' 
+                            : 'bg-white text-primary shadow-sm' 
+                          : isDarkMode 
+                            ? 'text-slate-500 hover:text-slate-300' 
+                            : 'text-slate-400 hover:text-slate-600'
+                      }`}
                     >
                       ก่อนเฉลย
                     </button>
                     <button 
                       onClick={() => handleUpdateQuizSettings({ audioTiming: 'after' })}
-                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition ${audioTiming === 'after' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition ${
+                        audioTiming === 'after' 
+                          ? isDarkMode 
+                            ? 'bg-slate-900 text-white shadow-sm' 
+                            : 'bg-white text-primary shadow-sm' 
+                          : isDarkMode 
+                            ? 'text-slate-500 hover:text-slate-300' 
+                            : 'text-slate-400 hover:text-slate-600'
+                      }`}
                     >
                       หลังเฉลย
                     </button>
@@ -274,8 +322,10 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
         {/* Word List Area */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-4 px-2">
-             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">รายการคำศัพท์</h3>
-             <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{totalWords} WORDS</span>
+             <h3 className={`text-sm font-bold uppercase tracking-widest ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>รายการคำศัพท์</h3>
+             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+               isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-slate-100 text-slate-500'
+             }`}>{totalWords} WORDS</span>
           </div>
           
           <div className="space-y-2">

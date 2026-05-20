@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
 import { Search, SlidersHorizontal, PlusCircle } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext.jsx';
 import WordListItem from './WordListItem.jsx';
 
 export default function WordList({ words, onEdit, onDelete, onAdd }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest'); // newest, oldest, hard, easy
+  const { isDarkMode } = useTheme();
 
   const filteredAndSortedWords = useMemo(() => {
     let result = [...words];
@@ -45,21 +47,33 @@ export default function WordList({ words, onEdit, onDelete, onAdd }) {
       {words.length > 0 && (
         <div className="flex gap-2 mb-6">
           <div className="relative flex-1 group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary transition-colors" size={18} />
+            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${
+              isDarkMode ? 'text-slate-500 group-focus-within:text-indigo-400' : 'text-slate-300 group-focus-within:text-primary'
+            }`} size={18} />
             <input 
               type="text" 
               placeholder="ค้นหา..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary/20 focus:outline-none transition-all"
+              className={`w-full pl-10 pr-4 py-3 rounded-2xl text-sm focus:outline-none transition-all ${
+                isDarkMode 
+                  ? 'bg-slate-900 border border-slate-800/80 text-white placeholder-slate-600 focus:bg-slate-950 focus:border-slate-700' 
+                  : 'bg-slate-50 border border-slate-100 text-slate-900 focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary/20'
+              }`}
             />
           </div>
           <div className="relative">
-            <SlidersHorizontal className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" size={16} />
+            <SlidersHorizontal className={`absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none ${
+              isDarkMode ? 'text-slate-500' : 'text-slate-300'
+            }`} size={16} />
             <select 
               value={sortBy} 
               onChange={(e) => setSortBy(e.target.value)}
-              className="pl-9 pr-8 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-600 focus:bg-white focus:outline-none appearance-none cursor-pointer transition-all"
+              className={`pl-9 pr-8 py-3 rounded-2xl text-sm font-bold focus:outline-none appearance-none cursor-pointer transition-all ${
+                isDarkMode 
+                  ? 'bg-slate-900 border border-slate-800 text-slate-300 focus:bg-slate-950' 
+                  : 'bg-slate-50 border border-slate-100 text-slate-600 focus:bg-white'
+              }`}
             >
               <option value="newest">NEW</option>
               <option value="oldest">OLD</option>
@@ -71,21 +85,31 @@ export default function WordList({ words, onEdit, onDelete, onAdd }) {
       )}
 
       {words.length === 0 ? (
-        <div className="text-center py-16 bg-slate-50 rounded-3xl border border-dashed border-slate-200 animate-pop">
-          <div className="bg-white w-12 h-12 rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-4">
-            <PlusCircle className="text-slate-200" size={24} />
+        <div className={`text-center py-16 rounded-3xl border border-dashed animate-pop ${
+          isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'
+        }`}>
+          <div className={`w-12 h-12 rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-4 border ${
+            isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-100'
+          }`}>
+            <PlusCircle className={isDarkMode ? 'text-slate-700' : 'text-slate-200'} size={24} />
           </div>
-          <h3 className="text-md font-bold text-slate-800 mb-1">คลังคำศัพท์ว่างเปล่า</h3>
-          <p className="text-slate-400 text-xs mb-6">เริ่มเพิ่มคำศัพท์เพื่อฝึกฝน</p>
+          <h3 className={`text-md font-bold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-800'}`}>คลังคำศัพท์ว่างเปล่า</h3>
+          <p className={`text-xs mb-6 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>เริ่มเพิ่มคำศัพท์เพื่อฝึกฝน</p>
           <button 
             onClick={onAdd}
-            className="bg-white text-primary border border-slate-200 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-50 transition active:scale-95"
+            className={`px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-50 transition active:scale-95 ${
+              isDarkMode 
+                ? 'bg-white text-slate-950 hover:bg-slate-100 border border-transparent' 
+                : 'bg-white text-primary border border-slate-200 hover:bg-slate-50'
+            }`}
           >
             + เพิ่มคำศัพท์
           </button>
         </div>
       ) : filteredAndSortedWords.length === 0 ? (
-        <div className="text-center py-12 text-slate-400 font-medium animate-fade-in">
+        <div className={`text-center py-12 font-medium animate-fade-in ${
+          isDarkMode ? 'text-slate-500' : 'text-slate-400'
+        }`}>
           ไม่พบคำศัพท์ที่ค้นหา
         </div>
       ) : (

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import { ThemeProvider, useTheme } from './context/ThemeContext.jsx';
 import PWAInstallPrompt from './components/PWAInstallPrompt.jsx';
 import MobileNav from './components/MobileNav.jsx';
 
@@ -14,6 +15,7 @@ import UserProfile from './components/UserProfile.jsx';
 
 function AppContent() {
   const { user, loading } = useAuth();
+  const { isDarkMode } = useTheme();
   const [currentScreen, setCurrentScreen] = useState('home');
   const [selectedDeckId, setSelectedDeckId] = useState(null);
   const [quizSettings, setQuizSettings] = useState({ enableAudio: true, audioTiming: 'after' });
@@ -41,7 +43,7 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className={`flex min-h-screen items-center justify-center transition-colors duration-300 ${isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
       </div>
     );
@@ -50,7 +52,7 @@ function AppContent() {
   // --- Unauthenticated Routes ---
   if (!user) {
     return (
-      <div className="max-w-md mx-auto md:max-w-2xl bg-white min-h-screen shadow-2xl shadow-slate-200 relative overflow-hidden">
+      <div className={`max-w-md mx-auto md:max-w-2xl min-h-screen shadow-2xl relative overflow-hidden transition-colors duration-300 ${isDarkMode ? 'bg-slate-950 text-slate-100 shadow-none border-x border-slate-900' : 'bg-white text-slate-900 shadow-slate-200'}`}>
         {currentScreen === 'signup' 
           ? <SignUpScreen onBack={() => navigateTo('login')} />
           : <LoginScreen onSignUp={() => navigateTo('signup')} />
@@ -61,7 +63,7 @@ function AppContent() {
 
   // --- Authenticated Routes ---
   return (
-    <div className="max-w-md mx-auto md:max-w-2xl bg-white min-h-screen shadow-2xl shadow-slate-200 relative flex flex-col overflow-hidden">
+    <div className={`max-w-md mx-auto md:max-w-2xl min-h-screen shadow-2xl relative flex flex-col overflow-hidden transition-colors duration-300 ${isDarkMode ? 'bg-slate-950 text-slate-100 shadow-none border-x border-slate-900' : 'bg-[#fafafa] text-slate-900 shadow-slate-200 border-x border-slate-100/50'}`}>
       <PWAInstallPrompt />
       
       {/* Content Area with padding for bottom nav */}
@@ -104,7 +106,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </AuthProvider>
   );
 }
