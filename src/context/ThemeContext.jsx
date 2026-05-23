@@ -5,7 +5,8 @@ const ThemeContext = createContext();
 export function ThemeProvider({ children }) {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('vocab_buddy_dark_mode');
-    return saved === 'true';
+    // ตั้งให้ค่าเริ่มต้นของแอปเป็นโหมดมืด (Dark Mode) หากผู้ใช้ยังไม่เคยปิดโหมดมืด (saved !== 'false')
+    return saved !== 'false';
   });
 
   const toggleDarkMode = () => {

@@ -121,10 +121,11 @@ export const updateDeck = async (deckId, updates) => {
 export const deleteDeck = async (deckId) => {
   if (!deckId) throw new Error('Deck ID is required');
   try {
-    // ลบ Deck และ Words ที่เกี่ยวข้องพร้อมกัน
+    // ลบคำศัพท์ในสำรับออกก่อนเพื่อให้ผ่านการประเมินสิทธิ์ความปลอดภัย จากนั้นค่อยลบตัว Deck
     const deckRef = ref(db, `decks/${deckId}`);
     const wordsRef = ref(db, `words/${deckId}`);
-    await Promise.all([remove(deckRef), remove(wordsRef)]);
+    await remove(wordsRef);
+    await remove(deckRef);
   } catch (error) {
     console.error('Error deleting deck:', error);
     throw new Error('ไม่สามารถลบ Deck ได้');
