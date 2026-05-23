@@ -19,7 +19,9 @@ export default function WordListItem({ word, onEdit, onDelete }) {
     e.stopPropagation();
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(word.word);
-      utterance.lang = 'en-US'; // Default to English, could be dynamic
+      // ใช้ภาษาของคำศัพท์แทนค่าตายตัว en-US
+      const langMap = { en: 'en-US', zh: 'zh-CN', ja: 'ja-JP', th: 'th-TH' };
+      utterance.lang = langMap[word.language] || word.language || 'en-US';
       window.speechSynthesis.speak(utterance);
     }
   };
@@ -63,26 +65,31 @@ export default function WordListItem({ word, onEdit, onDelete }) {
           </div>
         </div>
         
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button 
-            onClick={() => onEdit(word)}
-            className={`p-2 text-slate-400 hover:text-primary transition-colors rounded-xl ${
-              isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-50'
-            }`}
-            title="แก้ไข"
-          >
-            <Edit2 size={18} />
-          </button>
-          <button 
-            onClick={() => onDelete(word.id)}
-            className={`p-2 text-slate-400 hover:text-red-500 transition-colors rounded-xl ${
-              isDarkMode ? 'hover:bg-red-950/30' : 'hover:bg-red-50'
-            }`}
-            title="ลบ"
-          >
-            <Trash2 size={18} />
-          </button>
-        </div>
+        {/* ปุ่ม Edit/Delete แสดงเมื่อมีสิทธิ์แก้ไข (ไม่เป็นสำรับรวม) - ใช้ได้ทั้งบนมือถือและเดสก์ท็อป */}
+        {onEdit && onDelete && (
+          <div className="flex gap-1 ml-2 flex-shrink-0">
+            <button 
+              onClick={() => onEdit(word)}
+              className={`p-2 transition-colors rounded-xl ${
+                isDarkMode ? 'text-slate-500 hover:text-primary hover:bg-slate-800' : 'text-slate-300 hover:text-primary hover:bg-slate-50'
+              }`}
+              title="แก้ไข"
+              aria-label="แก้ไขคำศัพท์"
+            >
+              <Edit2 size={16} />
+            </button>
+            <button 
+              onClick={() => onDelete(word.id)}
+              className={`p-2 transition-colors rounded-xl ${
+                isDarkMode ? 'text-slate-500 hover:text-red-400 hover:bg-red-950/30' : 'text-slate-300 hover:text-red-500 hover:bg-red-50'
+              }`}
+              title="ลบ"
+              aria-label="ลบคำศัพท์"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -20,12 +20,22 @@ export const useWords = (deckId) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getWordsByDeckId(deckId);
-      setWords(data);
+      const ids = deckId.includes(',') ? deckId.split(',') : [deckId];
+      
+      // ดึงคำศัพท์ทั้งหมดแบบคู่ขนาน (Concurrent Fetching)
+      const wordsPromises = ids.map(async (id) => {
+        const data = await getWordsByDeckId(id);
+        return data.map(word => ({ ...word, deckId: id }));
+      });
+      
+      const wordsResults = await Promise.all(wordsPromises);
+      const allWords = wordsResults.flat();
+      setWords(allWords);
+      
       // LocalStorage Backup
       localStorage.setItem(`words_${deckId}`, JSON.stringify({
         lastSync: Date.now(),
-        words: data
+        words: allWords
       }));
     } catch (err) {
       console.error(err);

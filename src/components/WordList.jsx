@@ -95,16 +95,18 @@ export default function WordList({ words, onEdit, onDelete, onAdd }) {
           </div>
           <h3 className={`text-md font-bold mb-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-800'}`}>คลังคำศัพท์ว่างเปล่า</h3>
           <p className={`text-xs mb-6 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>เริ่มเพิ่มคำศัพท์เพื่อฝึกฝน</p>
-          <button 
-            onClick={onAdd}
-            className={`px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-50 transition active:scale-95 ${
-              isDarkMode 
-                ? 'bg-white text-slate-950 hover:bg-slate-100 border border-transparent' 
-                : 'bg-white text-primary border border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            + เพิ่มคำศัพท์
-          </button>
+          {onAdd && (
+            <button 
+              onClick={onAdd}
+              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition active:scale-95 ${
+                isDarkMode 
+                  ? 'bg-white text-slate-950 hover:bg-slate-100 border border-transparent' 
+                  : 'bg-white text-primary border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              + เพิ่มคำศัพท์
+            </button>
+          )}
         </div>
       ) : filteredAndSortedWords.length === 0 ? (
         <div className={`text-center py-12 font-medium animate-fade-in ${

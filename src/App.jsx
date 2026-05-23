@@ -18,7 +18,7 @@ function AppContent() {
   const { isDarkMode } = useTheme();
   const [currentScreen, setCurrentScreen] = useState('home');
   const [selectedDeckId, setSelectedDeckId] = useState(null);
-  const [quizSettings, setQuizSettings] = useState({ enableAudio: true, audioTiming: 'after' });
+  const [quizSettings, setQuizSettings] = useState({ enableAudio: true, audioTiming: 'after', playMode: 'standard', timeLimit: 5 });
 
   // Manage Routing based on Auth State
   useEffect(() => {
@@ -69,7 +69,10 @@ function AppContent() {
       {/* Content Area with padding for bottom nav */}
       <div className="flex-1 pb-[60px]">
         {currentScreen === 'home' && (
-          <DeckListScreen onDeckSelect={(deckId) => navigateTo('deck-detail', { deckId })} />
+          <DeckListScreen 
+            onDeckSelect={(deckId) => navigateTo('deck-detail', { deckId })} 
+            onStartQuiz={(deckId, settings) => navigateTo('quiz', { deckId, quizSettings: settings })}
+          />
         )}
         
         {currentScreen === 'deck-detail' && (

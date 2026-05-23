@@ -18,14 +18,20 @@ export default function WordModal({ isOpen, onClose, onSave, initialWord = null 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Sync state เมื่อ modal เปิดหรือ initialWord เปลี่ยน (แก้ stale state bug)
   useEffect(() => {
     if (isOpen) {
+      setWord(initialWord?.word || '');
+      setMeaning(initialWord?.meaning || '');
+      setPronunciation(initialWord?.pronunciation || '');
+      setLanguage(initialWord?.language || 'en');
+      setError('');
       document.body.classList.add('modal-open');
     } else {
       document.body.classList.remove('modal-open');
     }
     return () => document.body.classList.remove('modal-open');
-  }, [isOpen]);
+  }, [isOpen, initialWord]);
 
   if (!isOpen) return null;
 

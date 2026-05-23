@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { X, Volume2, Check, X as XIcon } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { X, Volume2, Check, X as XIcon, Heart, Zap, RotateCcw, Home as HomeIcon } from 'lucide-react';
 import { useQuiz } from '../hooks/useQuiz.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import QuizCard from './QuizCard.jsx';
@@ -7,6 +7,15 @@ import SummaryScreen from './SummaryScreen.jsx';
 
 export default function QuizScreen({ deckId, settings = {}, onBack }) {
   const { isDarkMode } = useTheme();
+  
+  const { 
+    enableAudio = true, 
+    audioTiming = 'after', 
+    playMode = 'standard', 
+    timeLimit = 5,
+    displayMode = 'word-to-meaning'
+  } = settings;
+
   const {
     currentWord,
     words,
@@ -15,17 +24,24 @@ export default function QuizScreen({ deckId, settings = {}, onBack }) {
     setRevealed,
     stats,
     loading,
+    lives,
+    isGameOver,
     handleSelfCheck,
     resetQuiz
-  } = useQuiz(deckId);
+  } = useQuiz(deckId, settings);
 
-  const { enableAudio = true, audioTiming = 'after' } = settings;
+  const [timeLeft, setTimeLeft] = useState(timeLimit);
+  const [isTimedOut, setIsTimedOut] = useState(false);
 
   const speak = (text, language = 'en-US') => {
     if (!window.speechSynthesis || !enableAudio) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = language;
+    
+    // แปลงภาษาแบบย่อให้เป็นรหัสภาษาเต็มสำหรับออกเสียงอย่างถูกต้อง
+    const langMap = { en: 'en-US', zh: 'zh-CN', ja: 'ja-JP', th: 'th-TH' };
+    utterance.lang = langMap[language] || language || 'en-US';
+    
     window.speechSynthesis.speak(utterance);
   };
 
@@ -36,12 +52,39 @@ export default function QuizScreen({ deckId, settings = {}, onBack }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentWord, index, enableAudio, audioTiming]);
 
-  const handleReveal = () => {
+  const handleReveal = useCallback(() => {
     setRevealed(true);
     if (currentWord && enableAudio && audioTiming === 'after') {
       speak(currentWord.word, currentWord.language || 'en-US');
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentWord, enableAudio, audioTiming]);
+
+  // Timer Effect for Time Attack
+  useEffect(() => {
+    if (playMode !== 'time-attack' || revealed || isTimedOut || loading || !currentWord) return;
+
+    setTimeLeft(timeLimit);
+    const interval = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 0.1) {
+          clearInterval(interval);
+          handleReveal();
+          setIsTimedOut(true);
+          return 0;
+        }
+        return prev - 0.1;
+      });
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [index, revealed, playMode, timeLimit, loading, currentWord, isTimedOut, handleReveal]);
+
+  // Reset timer state when word changes
+  useEffect(() => {
+    setIsTimedOut(false);
+    setTimeLeft(timeLimit);
+  }, [index, timeLimit]);
 
   if (loading) {
     return (
@@ -49,6 +92,80 @@ export default function QuizScreen({ deckId, settings = {}, onBack }) {
         isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-white text-slate-900'
       }`}>
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (isGameOver) {
+    const accuracy = stats.correct + stats.incorrect > 0 
+      ? Math.round((stats.correct / (stats.correct + stats.incorrect)) * 100) 
+      : 0;
+
+    return (
+      <div className={`min-h-[85vh] flex flex-col justify-center items-center p-8 text-center animate-fade-in transition-colors duration-300 ${
+        isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-[#fafafa] text-slate-900'
+      }`}>
+        <div className={`mb-6 p-6 rounded-full transition-colors flex items-center justify-center animate-bounce ${
+          isDarkMode ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-red-50 text-red-500'
+        }`}>
+          <Heart size={64} fill="#ef4444" className="text-red-500 animate-pulse" />
+        </div>
+        
+        <h2 className="text-3xl font-black mb-2 text-red-500">GAME OVER</h2>
+        <p className={`font-bold uppercase tracking-widest text-xs mb-10 transition-colors ${
+          isDarkMode ? 'text-slate-500' : 'text-slate-400'
+        }`}>ท้าทายความจำขั้นสุด: หัวใจหมดเกลี้ยง!</p>
+
+        <div className={`rounded-[40px] p-8 border w-full max-w-sm mb-10 transition-all duration-300 ${
+          isDarkMode 
+            ? 'bg-slate-900 border-slate-800 shadow-none' 
+            : 'bg-white border-slate-50 shadow-2xl shadow-slate-200/50'
+        }`}>
+          <div className="mb-6">
+            <div className={`text-[10px] font-black uppercase tracking-widest mb-1 ${
+              isDarkMode ? 'text-slate-500' : 'text-slate-400'
+            }`}>คำศัพท์ที่ทำได้</div>
+            <div className="text-5xl font-black text-red-500">{stats.correct}</div>
+          </div>
+
+          <div className={`grid grid-cols-2 gap-4 pt-6 border-t ${
+            isDarkMode ? 'border-slate-800/80' : 'border-slate-100'
+          }`}>
+            <div>
+              <div className={`text-[10px] font-black uppercase mb-1 ${
+                isDarkMode ? 'text-slate-500' : 'text-slate-400'
+              }`}>ความแม่นยำ</div>
+              <div className={`text-xl font-black ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>{accuracy}%</div>
+            </div>
+            <div>
+              <div className={`text-[10px] font-black uppercase mb-1 ${
+                isDarkMode ? 'text-slate-500' : 'text-slate-400'
+              }`}>คำที่ทบทวนจริง</div>
+              <div className={`text-xl font-black ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>{stats.correct + stats.incorrect}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4 w-full max-w-sm">
+          <button 
+            onClick={resetQuiz}
+            className="w-full bg-red-500 text-white font-black py-4 rounded-3xl shadow-xl shadow-red-500/20 hover:bg-red-650 transition active:scale-[0.98] flex items-center justify-center gap-3"
+          >
+            <RotateCcw size={18} />
+            เล่นใหม่อีกครั้ง
+          </button>
+          <button 
+            onClick={onBack}
+            className={`w-full font-black py-4 rounded-3xl transition active:scale-[0.98] flex items-center justify-center gap-3 text-sm ${
+              isDarkMode 
+                ? 'bg-slate-900 text-slate-350 hover:bg-slate-800 hover:text-white border border-slate-800/80' 
+                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-100 shadow-sm'
+            }`}
+          >
+            <HomeIcon size={16} />
+            กลับสู่หน้ารายละเอียด
+          </button>
+        </div>
       </div>
     );
   }
@@ -83,11 +200,32 @@ export default function QuizScreen({ deckId, settings = {}, onBack }) {
         }`}>
           <X size={24} />
         </button>
-        <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${
-          isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-slate-100 text-slate-400'
-        }`}>
-          Word {index + 1} of {words.length}
-        </div>
+
+        {/* Heart display if in sudden-death mode */}
+        {playMode === 'sudden-death' ? (
+          <div className="flex gap-1.5 justify-center items-center">
+            {[1, 2, 3].map((heartIndex) => {
+              const active = heartIndex <= lives;
+              return (
+                <Heart
+                  key={heartIndex}
+                  size={20}
+                  fill={active ? '#ef4444' : 'none'}
+                  className={`transition-all duration-300 ${
+                    active ? 'text-red-500 scale-100 animate-pulse' : 'text-slate-300 dark:text-slate-750 scale-90 opacity-40'
+                  }`}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${
+            isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-slate-100 text-slate-400'
+          }`}>
+            Word {index + 1} of {words.length}
+          </div>
+        )}
+
         <div className="flex gap-4 text-xs font-black">
            <span className="text-green-500">✓ {stats.correct}</span>
            <span className="text-red-400">✗ {stats.incorrect}</span>
@@ -101,6 +239,18 @@ export default function QuizScreen({ deckId, settings = {}, onBack }) {
           style={{ width: `${progressPercent}%` }}
         ></div>
       </div>
+
+      {/* Time Attack Timer Countdown Bar */}
+      {playMode === 'time-attack' && !revealed && (
+        <div className={`w-full h-1 transition-all duration-305 ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
+          <div
+            className={`h-1 transition-all duration-100 ease-linear ${
+              timeLeft < 2 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'
+            }`}
+            style={{ width: `${(timeLeft / timeLimit) * 100}%` }}
+          ></div>
+        </div>
+      )}
 
       <div className="flex-1 p-6 flex flex-col max-w-lg w-full mx-auto">
         <div className="flex-1 flex flex-col justify-center relative py-10">
@@ -122,6 +272,7 @@ export default function QuizScreen({ deckId, settings = {}, onBack }) {
             word={currentWord} 
             revealed={revealed} 
             onReveal={handleReveal} 
+            displayMode={displayMode}
           />
         </div>
 
@@ -138,6 +289,18 @@ export default function QuizScreen({ deckId, settings = {}, onBack }) {
             >
               REVEAL ANSWER
             </button>
+          ) : isTimedOut ? (
+            <div className="w-full animate-slide-up flex flex-col items-center gap-3">
+              <div className="text-red-500 font-extrabold text-sm uppercase tracking-widest animate-pulse flex items-center gap-1.5">
+                <Zap size={16} /> หมดเวลาแล้ว! (Time's Up)
+              </div>
+              <button 
+                onClick={() => handleSelfCheck(false)}
+                className="w-full bg-red-500 text-white font-black py-5 rounded-3xl text-lg hover:bg-red-650 active:scale-[0.98] transition-all shadow-xl shadow-red-500/20 flex items-center justify-center gap-2"
+              >
+                <span>คำถัดไป</span>
+              </button>
+            </div>
           ) : (
             <div className="w-full animate-slide-up">
               <div className="flex gap-4">

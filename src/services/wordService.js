@@ -1,4 +1,4 @@
-import { ref, get, set, update, remove } from 'firebase/database';
+import { ref, get, set, update, remove, increment } from 'firebase/database';
 import { db } from './firebase-config.js';
 
 // Fallback สำหรับ crypto.randomUUID
@@ -46,23 +46,19 @@ export const addWord = async (deckId, wordData) => {
     const wordId = generateId();
     const wordRef = ref(db, `words/${deckId}/${wordId}`);
     const newWord = {
+      ...wordData,
       createdAt: Date.now(),
       difficulty: 'medium',
       reviewCount: 0,
       correctCount: 0,
-      streak: 0,
-      ...wordData
+      streak: 0
     };
     await set(wordRef, newWord);
     
-    // อัปเดต wordCount ใน Deck
+    // อัปเดต wordCount ใน Deck แบบ atomic ด้วย increment()
     try {
         const deckRef = ref(db, `decks/${deckId}`);
-        const deckSnapshot = await get(deckRef);
-        if (deckSnapshot.exists()) {
-            const currentCount = deckSnapshot.val().wordCount || 0;
-            await update(deckRef, { wordCount: currentCount + 1 });
-        }
+        await update(deckRef, { wordCount: increment(1) });
     } catch (updateError) {
         console.warn('Could not update wordCount, but word was added:', updateError);
     }
@@ -104,14 +100,12 @@ export const deleteWord = async (deckId, wordId) => {
     const wordRef = ref(db, `words/${deckId}/${wordId}`);
     await remove(wordRef);
 
-    // ลด wordCount ใน Deck
-    const deckRef = ref(db, `decks/${deckId}`);
-    const deckSnapshot = await get(deckRef);
-    if (deckSnapshot.exists()) {
-        const currentCount = deckSnapshot.val().wordCount || 0;
-        if(currentCount > 0) {
-            await update(deckRef, { wordCount: currentCount - 1 });
-        }
+    // ลด wordCount ใน Deck แบบ atomic ด้วย increment()
+    try {
+        const deckRef = ref(db, `decks/${deckId}`);
+        await update(deckRef, { wordCount: increment(-1) });
+    } catch (updateError) {
+        console.warn('Could not update wordCount, but word was deleted:', updateError);
     }
   } catch (error) {
     console.error('Error deleting word:', error);

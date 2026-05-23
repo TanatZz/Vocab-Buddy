@@ -252,7 +252,7 @@ export default function StatsScreen() {
                      <div className={`text-[10px] font-black px-2.5 py-1 rounded-lg uppercase ${
                        isDarkMode ? 'text-red-400 bg-red-950/30' : 'text-red-500 bg-red-50'
                      }`}>
-                       {Math.round((w.correctCount / w.reviewCount) * 100)}% ACC
+                        {w.reviewCount > 0 ? Math.round((w.correctCount / w.reviewCount) * 100) : 0}% ACC
                      </div>
                    </div>
                  ))}

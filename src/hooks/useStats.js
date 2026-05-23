@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ref, get } from 'firebase/database';
+import { ref, get, query, orderByChild, equalTo } from 'firebase/database';
 import { db } from '../services/firebase-config.js';
 import * as calc from '../utils/statsCalculator.js';
 import { getStudySessions } from '../services/sessionService.js';
@@ -22,33 +22,35 @@ export const useStats = (userId) => {
       
       setLoading(true);
       try {
-        // 1. ดึงข้อมูล Decks ทั้งหมดของผู้ใช้
+        // 1. ดึงข้อมูล Decks ทั้งหมดของผู้ใช้แบบปลอดภัย (Server-side Filter)
         const decksRef = ref(db, 'decks');
-        const decksSnapshot = await get(decksRef);
+        const decksQuery = query(decksRef, orderByChild('userId'), equalTo(userId));
+        const decksSnapshot = await get(decksQuery);
         const userDecks = [];
         const userDeckIds = [];
         
         if (decksSnapshot.exists()) {
           decksSnapshot.forEach(child => {
              const deck = child.val();
-             if (deck.userId === userId) {
-               userDecks.push({ id: child.key, ...deck });
-               userDeckIds.push(child.key);
-             }
+             userDecks.push({ id: child.key, ...deck });
+             userDeckIds.push(child.key);
           });
         }
 
-        // 2. ดึง Words จากทุก Decks
-        let allWords = [];
-        for (const deckId of userDeckIds) {
+        // 2. ดึง Words จากทุก Decks พร้อมๆ กันด้วย Promise.all (แก้ N+1 Query)
+        const wordPromises = userDeckIds.map(async (deckId) => {
             const wordsRef = ref(db, `words/${deckId}`);
             const wordsSnapshot = await get(wordsRef);
+            const deckWords = [];
             if (wordsSnapshot.exists()) {
                 wordsSnapshot.forEach(w => {
-                  allWords.push({ id: w.key, ...w.val(), deckId });
+                  deckWords.push({ id: w.key, ...w.val(), deckId });
                 });
             }
-        }
+            return deckWords;
+        });
+        const wordsResults = await Promise.all(wordPromises);
+        let allWords = wordsResults.flat();
 
         // 3. ดึง Study Sessions ประวัติการเรียนทั้งหมด
         const sessions = await getStudySessions(userId);

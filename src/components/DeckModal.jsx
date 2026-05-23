@@ -27,14 +27,20 @@ export default function DeckModal({ isOpen, onClose, onSave, initialDeck = null 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Sync state เมื่อ modal เปิดหรือ initialDeck เปลี่ยน (แก้ stale state bug)
   useEffect(() => {
     if (isOpen) {
+      setName(initialDeck?.name || '');
+      setDescription(initialDeck?.description || '');
+      setLanguage(initialDeck?.language || 'en');
+      setColor(initialDeck?.color || COLORS[0]);
+      setError('');
       document.body.classList.add('modal-open');
     } else {
       document.body.classList.remove('modal-open');
     }
     return () => document.body.classList.remove('modal-open');
-  }, [isOpen]);
+  }, [isOpen, initialDeck]);
 
   if (!isOpen) return null;
 

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Play, Plus, Download, Settings, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Play, Plus, Database, Settings, Trash2, ChevronDown, ChevronUp, Zap, Clock, Heart } from 'lucide-react';
 import { getDeckById, updateDeck } from '../services/deckService.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useWords, useAddWord, useUpdateWord, useDeleteWord } from '../hooks/useWordManagement.js';
 import { useDeleteDeck } from '../hooks/useDeckManagement.js';
 import WordModal from './WordModal.jsx';
 import WordList from './WordList.jsx';
-import QuickImportModal from './QuickImportModal.jsx';
+import DataManagementModal from './DataManagementModal.jsx';
 
 export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
   const [deck, setDeck] = useState(null);
@@ -17,14 +17,17 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
   // Quiz Settings State
   const [enableAudio, setEnableAudio] = useState(true);
   const [audioTiming, setAudioTiming] = useState('after');
+  const [playMode, setPlayMode] = useState('standard');
+  const [timeLimit, setTimeLimit] = useState(5);
+  const [displayMode, setDisplayMode] = useState('word-to-meaning');
   const [showQuizSettings, setShowQuizSettings] = useState(false);
 
   // Word Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWord, setEditingWord] = useState(null);
   
-  // Quick Import State
-  const [isQuickImportOpen, setIsQuickImportOpen] = useState(false);
+  // Data Management Modal State
+  const [isDataModalOpen, setIsDataModalOpen] = useState(false);
 
   const { words, loading: wordsLoading, error: wordsError, refresh: refreshWords } = useWords(deckId);
   
@@ -46,17 +49,51 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
     onBack();
   });
 
+  const isCombinedDeck = deckId ? deckId.includes(',') : false;
+
   useEffect(() => {
     const fetchDeck = async () => {
       if (!deckId) return;
       setDeckLoading(true);
       try {
-        const deckData = await getDeckById(deckId);
-        setDeck(deckData);
-        // Load settings from deck data if exist
-        if (deckData.quizSettings) {
-          setEnableAudio(deckData.quizSettings.enableAudio ?? true);
-          setAudioTiming(deckData.quizSettings.audioTiming ?? 'after');
+        if (isCombinedDeck) {
+          const ids = deckId.split(',');
+          const deckPromises = ids.map(id => getDeckById(id));
+          const decksResults = await Promise.all(deckPromises);
+          
+          const combinedDeck = {
+            id: deckId,
+            name: decksResults.map(d => d.name).join(' + '),
+            description: `สำรับคละพิเศษประกอบด้วย: ${decksResults.map(d => d.name).join(', ')}`,
+            wordCount: decksResults.reduce((sum, d) => sum + (d.wordCount || 0), 0),
+            color: 'bg-primary',
+            quizSettings: decksResults[0]?.quizSettings || {
+              enableAudio: true,
+              audioTiming: 'after',
+              playMode: 'standard',
+              timeLimit: 5,
+              displayMode: 'word-to-meaning'
+            }
+          };
+          setDeck(combinedDeck);
+          
+          const qSettings = combinedDeck.quizSettings;
+          setEnableAudio(qSettings.enableAudio ?? true);
+          setAudioTiming(qSettings.audioTiming ?? 'after');
+          setPlayMode(qSettings.playMode ?? 'standard');
+          setTimeLimit(qSettings.timeLimit ?? 5);
+          setDisplayMode(qSettings.displayMode ?? 'word-to-meaning');
+        } else {
+          const deckData = await getDeckById(deckId);
+          setDeck(deckData);
+          // Load settings from deck data if exist
+          if (deckData.quizSettings) {
+            setEnableAudio(deckData.quizSettings.enableAudio ?? true);
+            setAudioTiming(deckData.quizSettings.audioTiming ?? 'after');
+            setPlayMode(deckData.quizSettings.playMode ?? 'standard');
+            setTimeLimit(deckData.quizSettings.timeLimit ?? 5);
+            setDisplayMode(deckData.quizSettings.displayMode ?? 'word-to-meaning');
+          }
         }
       } catch (err) {
         setDeckError(err.message);
@@ -66,20 +103,28 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
     };
 
     fetchDeck();
-  }, [deckId]);
+  }, [deckId, isCombinedDeck]);
 
   const handleUpdateQuizSettings = async (updates) => {
     const newSettings = {
       enableAudio: updates.enableAudio !== undefined ? updates.enableAudio : enableAudio,
-      audioTiming: updates.audioTiming !== undefined ? updates.audioTiming : audioTiming
+      audioTiming: updates.audioTiming !== undefined ? updates.audioTiming : audioTiming,
+      playMode: updates.playMode !== undefined ? updates.playMode : playMode,
+      timeLimit: updates.timeLimit !== undefined ? updates.timeLimit : timeLimit,
+      displayMode: updates.displayMode !== undefined ? updates.displayMode : displayMode
     };
     
     // Optimistic update
     if (updates.enableAudio !== undefined) setEnableAudio(updates.enableAudio);
     if (updates.audioTiming !== undefined) setAudioTiming(updates.audioTiming);
+    if (updates.playMode !== undefined) setPlayMode(updates.playMode);
+    if (updates.timeLimit !== undefined) setTimeLimit(updates.timeLimit);
+    if (updates.displayMode !== undefined) setDisplayMode(updates.displayMode);
 
     try {
-      await updateDeck(deckId, { quizSettings: newSettings });
+      if (!isCombinedDeck) {
+        await updateDeck(deckId, { quizSettings: newSettings });
+      }
     } catch (err) {
       console.error('Failed to save quiz settings:', err);
     }
@@ -93,20 +138,7 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
     }
   };
 
-  const handleQuickImport = async (wordsToImport) => {
-    try {
-      for (const wordData of wordsToImport) {
-        const isDuplicate = words.some(w => w.word.toLowerCase() === wordData.word.toLowerCase());
-        if (!isDuplicate) {
-          await addWordItem(wordData);
-        }
-      }
-      refreshWords();
-    } catch (err) {
-      console.error('Import failed:', err);
-      throw new Error('เกิดข้อผิดพลาดในการนำเข้าข้อมูลบางส่วน', { cause: err });
-    }
-  };
+
 
   const handleEditClick = (word) => {
     setEditingWord(word);
@@ -170,13 +202,15 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
           <ArrowLeft size={24} />
         </button>
         <h2 className={`text-lg font-bold truncate flex-1 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{deck.name}</h2>
-        <button 
-          onClick={handleDeleteDeck}
-          className={`p-2 transition ${isDarkMode ? 'text-slate-600 hover:text-red-400' : 'text-slate-300 hover:text-red-500'}`}
-          aria-label="Delete Deck"
-        >
-          <Trash2 size={20} />
-        </button>
+        {!isCombinedDeck && (
+          <button 
+            onClick={handleDeleteDeck}
+            className={`p-2 transition ${isDarkMode ? 'text-slate-600 hover:text-red-400' : 'text-slate-300 hover:text-red-500'}`}
+            aria-label="Delete Deck"
+          >
+            <Trash2 size={20} />
+          </button>
+        )}
       </header>
 
       <div className="px-6 py-6">
@@ -202,10 +236,108 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
           </div>
         </div>
 
+        {/* Play Mode Selection */}
+        <div className="mb-8">
+          <h3 className={`text-xs font-black uppercase tracking-widest mb-3 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+            โหมดการเล่น
+          </h3>
+          <div className="grid grid-cols-3 gap-2.5">
+            {/* Standard Mode Card */}
+            <button
+              onClick={() => handleUpdateQuizSettings({ playMode: 'standard' })}
+              className={`p-3 rounded-2xl border text-center transition flex flex-col items-center gap-1.5 active:scale-95 duration-200 ${
+                playMode === 'standard'
+                  ? isDarkMode
+                    ? 'bg-slate-900 border-primary text-primary shadow-[0_0_15px_rgba(99,102,241,0.2)]'
+                    : 'bg-white border-primary text-primary shadow-lg shadow-primary/10'
+                  : isDarkMode
+                    ? 'bg-slate-900/40 border-slate-850 text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                    : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'
+              }`}
+            >
+              <div className={`p-1.5 rounded-xl ${playMode === 'standard' ? 'bg-primary/15 text-primary' : 'bg-slate-500/10'}`}>
+                <Clock size={16} />
+              </div>
+              <span className="text-[11px] font-black tracking-wide">ทั่วไป</span>
+            </button>
+
+            {/* Sudden Death Card */}
+            <button
+              onClick={() => handleUpdateQuizSettings({ playMode: 'sudden-death' })}
+              className={`p-3 rounded-2xl border text-center transition flex flex-col items-center gap-1.5 active:scale-95 duration-200 ${
+                playMode === 'sudden-death'
+                  ? 'border-red-500 text-red-500 bg-red-500/5 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                  : isDarkMode
+                    ? 'bg-slate-900/40 border-slate-850 text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                    : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'
+              }`}
+            >
+              <div className={`p-1.5 rounded-xl ${playMode === 'sudden-death' ? 'bg-red-500/15 text-red-500' : 'bg-slate-500/10'}`}>
+                <Heart size={16} fill={playMode === 'sudden-death' ? 'currentColor' : 'none'} />
+              </div>
+              <span className="text-[11px] font-black tracking-wide">ท้าทาย</span>
+            </button>
+
+            {/* Time Attack Card */}
+            <button
+              onClick={() => handleUpdateQuizSettings({ playMode: 'time-attack' })}
+              className={`p-3 rounded-2xl border text-center transition flex flex-col items-center gap-1.5 active:scale-95 duration-200 ${
+                playMode === 'time-attack'
+                  ? 'border-amber-500 text-amber-500 bg-amber-500/5 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                  : isDarkMode
+                    ? 'bg-slate-900/40 border-slate-850 text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                    : 'bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100'
+              }`}
+            >
+              <div className={`p-1.5 rounded-xl ${playMode === 'time-attack' ? 'bg-amber-500/15 text-amber-500' : 'bg-slate-500/10'}`}>
+                <Zap size={16} />
+              </div>
+              <span className="text-[11px] font-black tracking-wide">จำกัดเวลา</span>
+            </button>
+          </div>
+
+          {/* Mode Descriptions */}
+          <div className={`mt-3 p-3 rounded-2xl text-[11px] font-medium leading-relaxed border transition-all ${
+            isDarkMode ? 'bg-slate-900/30 border-slate-900 text-slate-400' : 'bg-slate-50/50 border-slate-50 text-slate-500'
+          }`}>
+            {playMode === 'standard' && '🎯 ทบทวนคำศัพท์ตามน้ำหนักความยากง่ายด้วยระบบ Spaced Repetition'}
+            {playMode === 'sudden-death' && '❤️ มี 3 หัวใจ ตอบผิด 3 ครั้งเกมโอเวอร์ทันที! กดดันและท้าทายความจำขั้นสุด'}
+            {playMode === 'time-attack' && '⏳ ตอบคำศัพท์ภายใต้เวลาที่จำกัด หากหมดเวลาจะถือว่าผิดทันที'}
+          </div>
+
+          {/* Time Attack Timer Settings */}
+          {playMode === 'time-attack' && (
+            <div className="mt-3.5 animate-slide-up">
+              <div className={`flex justify-between items-center p-3 rounded-2xl border ${
+                isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm'
+              }`}>
+                <span className={`text-xs font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>เวลาต่อข้อ:</span>
+                <div className={`flex p-1 rounded-xl ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
+                  {[3, 5, 10].map(seconds => (
+                    <button
+                      key={seconds}
+                      onClick={() => handleUpdateQuizSettings({ timeLimit: seconds })}
+                      className={`py-1.5 px-3 rounded-lg text-xs font-black transition-all ${
+                        timeLimit === seconds
+                          ? 'bg-amber-500 text-white shadow-sm'
+                          : isDarkMode
+                            ? 'text-slate-500 hover:text-slate-350'
+                            : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      {seconds}s
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Action Buttons */}
         <div className="flex flex-col gap-3 mb-8">
           <button 
-            onClick={() => onStartQuiz && onStartQuiz(deckId, { enableAudio, audioTiming })}
+            onClick={() => onStartQuiz && onStartQuiz(deckId, { enableAudio, audioTiming, playMode, timeLimit, displayMode })}
             disabled={totalWords === 0}
             className="w-full bg-primary text-white font-bold py-4 px-6 rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-lg active:scale-95"
           >
@@ -213,28 +345,30 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
             เริ่มฝึกฝนตอนนี้
           </button>
           
-          <div className="flex gap-3">
-            <button 
-              onClick={handleAddClick}
-              className={`flex-1 border font-bold py-3.5 px-4 rounded-2xl transition flex items-center justify-center gap-2 active:scale-95 text-sm ${
-                isDarkMode 
-                  ? 'bg-slate-900 border-slate-800 hover:bg-slate-800/80 text-white' 
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              <Plus size={18} /> เพิ่มคำ
-            </button>
-            <button 
-              onClick={() => setIsQuickImportOpen(true)}
-              className={`flex-1 border font-bold py-3.5 px-4 rounded-2xl transition flex items-center justify-center gap-2 active:scale-95 text-sm ${
-                isDarkMode 
-                  ? 'bg-slate-900/40 border-slate-850 hover:bg-slate-800/40 text-indigo-400' 
-                  : 'bg-slate-50 border-slate-100 text-primary hover:bg-primary/5'
-              }`}
-            >
-              <Download size={18} /> นำเข้าด่วน
-            </button>
-          </div>
+          {!isCombinedDeck && (
+            <div className="flex gap-3">
+              <button 
+                onClick={handleAddClick}
+                className={`flex-1 border font-bold py-3.5 px-4 rounded-2xl transition flex items-center justify-center gap-2 active:scale-95 text-sm ${
+                  isDarkMode 
+                    ? 'bg-slate-900 border-slate-800 hover:bg-slate-800/80 text-white' 
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <Plus size={18} /> เพิ่มคำ
+              </button>
+              <button 
+                onClick={() => setIsDataModalOpen(true)}
+                className={`flex-1 border font-bold py-3.5 px-4 rounded-2xl transition flex items-center justify-center gap-2 active:scale-95 text-sm ${
+                  isDarkMode 
+                    ? 'bg-slate-900/40 border-slate-850 hover:bg-slate-800/40 text-indigo-400' 
+                    : 'bg-slate-50 border-slate-100 text-primary hover:bg-primary/5'
+                }`}
+              >
+                <Database size={18} /> จัดการข้อมูล
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Quiz Settings */}
@@ -315,6 +449,41 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
                   </div>
                 </div>
               )}
+
+              {/* โหมดแสดงผลการทดสอบ (Word to Meaning / Meaning to Word) */}
+              <div className={`pt-2 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-50'}`}>
+                <div className={`text-[11px] font-bold uppercase tracking-wider mb-3 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>โหมดการแสดงผล</div>
+                <div className={`flex p-1 rounded-xl ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
+                  <button 
+                    onClick={() => handleUpdateQuizSettings({ displayMode: 'word-to-meaning' })}
+                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition ${
+                      displayMode === 'word-to-meaning' 
+                        ? isDarkMode 
+                          ? 'bg-slate-900 text-white shadow-sm' 
+                          : 'bg-white text-primary shadow-sm' 
+                        : isDarkMode 
+                          ? 'text-slate-500 hover:text-slate-300' 
+                          : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    คำศัพท์ → แปลไทย
+                  </button>
+                  <button 
+                    onClick={() => handleUpdateQuizSettings({ displayMode: 'meaning-to-word' })}
+                    className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition ${
+                      displayMode === 'meaning-to-word' 
+                        ? isDarkMode 
+                          ? 'bg-slate-900 text-white shadow-sm' 
+                          : 'bg-white text-primary shadow-sm' 
+                        : isDarkMode 
+                          ? 'text-slate-500 hover:text-slate-300' 
+                          : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    แปลไทย → คำศัพท์
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -333,9 +502,9 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
             
             <WordList 
               words={words}
-              onEdit={handleEditClick}
-              onDelete={handleDeleteWord}
-              onAdd={handleAddClick}
+              onEdit={isCombinedDeck ? null : handleEditClick}
+              onDelete={isCombinedDeck ? null : handleDeleteWord}
+              onAdd={isCombinedDeck ? null : handleAddClick}
             />
             
             {wordsLoading && (
@@ -359,11 +528,13 @@ export default function DeckDetailScreen({ deckId, onBack, onStartQuiz }) {
         deckId={deckId}
       />
 
-      {/* Quick Import Modal */}
-      <QuickImportModal 
-        isOpen={isQuickImportOpen}
-        onClose={() => setIsQuickImportOpen(false)}
-        onImport={handleQuickImport}
+      {/* Data Management Modal (Quick Paste, File Import, Export) */}
+      <DataManagementModal 
+        isOpen={isDataModalOpen}
+        onClose={() => setIsDataModalOpen(false)}
+        deckId={deckId}
+        deck={deck}
+        onImportSuccess={refreshWords}
       />
     </div>
   );

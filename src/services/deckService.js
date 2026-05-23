@@ -24,23 +24,19 @@ const generateId = () => {
  */
 export const getAllDecksForUser = async (userId) => {
   if (!userId) throw new Error('User ID is required');
-  console.log('--- เริ่มดึงข้อมูล Decks สำหรับ User:', userId, '---');
-  
+
   try {
     const decksRef = ref(db, 'decks');
-    // ลองดึงแบบธรรมดาก่อน (เพื่อเช็คว่าเชื่อมต่อได้ไหม)
-    const snapshot = await withTimeout(get(decksRef), 15000);
+    // ใช้ query เพื่อกรองข้อมูลเฉพาะของตนเองจากฝั่ง Firebase Server
+    const decksQuery = query(decksRef, orderByChild('userId'), equalTo(userId));
+    const snapshot = await withTimeout(get(decksQuery), 15000);
     
     const decks = [];
     if (snapshot.exists()) {
       snapshot.forEach((childSnapshot) => {
-        const deck = childSnapshot.val();
-        if (deck.userId === userId) {
-          decks.push({ id: childSnapshot.key, ...deck });
-        }
+        decks.push({ id: childSnapshot.key, ...childSnapshot.val() });
       });
     }
-    console.log('--- ดึงข้อมูลสำเร็จ พบ:', decks.length, 'รายการ ---');
     return decks;
   } catch (error) {
     console.error('❌ เกิดข้อผิดพลาดในการดึงข้อมูล:', error.message);
@@ -81,11 +77,11 @@ export const createDeck = async (userId, deckData) => {
     const deckId = generateId();
     const newDeckRef = ref(db, `decks/${deckId}`);
     const newDeck = {
+      ...deckData,
       userId,
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      wordCount: 0,
-      ...deckData
+      wordCount: 0
     };
     
     // หุ้มด้วย Timeout
@@ -125,8 +121,10 @@ export const updateDeck = async (deckId, updates) => {
 export const deleteDeck = async (deckId) => {
   if (!deckId) throw new Error('Deck ID is required');
   try {
+    // ลบ Deck และ Words ที่เกี่ยวข้องพร้อมกัน
     const deckRef = ref(db, `decks/${deckId}`);
-    await remove(deckRef);
+    const wordsRef = ref(db, `words/${deckId}`);
+    await Promise.all([remove(deckRef), remove(wordsRef)]);
   } catch (error) {
     console.error('Error deleting deck:', error);
     throw new Error('ไม่สามารถลบ Deck ได้');

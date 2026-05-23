@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { useDecksForUser, useCreateDeck } from '../hooks/useDeckManagement.js';
 import DeckModal from './DeckModal.jsx';
 
-export default function DeckListScreen({ onDeckSelect }) {
+export default function DeckListScreen({ onDeckSelect, onStartQuiz }) {
   const { user } = useAuth();
   const { isDarkMode, toggleDarkMode } = useTheme();
   const { decks, loading, error, refresh } = useDecksForUser(user?.uid);
@@ -14,6 +14,24 @@ export default function DeckListScreen({ onDeckSelect }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeLang, setActiveLang] = useState('all');
+  
+  // โหมดเลือกสอบทีละหลายสำรับ (Multi-selection)
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [selectedDeckIds, setSelectedDeckIds] = useState([]);
+
+  const handleDeckClick = (deckId) => {
+    if (isMultiSelectMode) {
+      setSelectedDeckIds(prev => {
+        if (prev.includes(deckId)) {
+          return prev.filter(id => id !== deckId);
+        } else {
+          return [...prev, deckId];
+        }
+      });
+    } else {
+      if (onDeckSelect) onDeckSelect(deckId);
+    }
+  };
 
   const handleCreateDeck = async (deckData) => {
     if (user) {
@@ -87,6 +105,29 @@ export default function DeckListScreen({ onDeckSelect }) {
             >
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
+
+            {/* Multi-Select Toggle Button */}
+            {decks.length > 1 && (
+              <button 
+                onClick={() => {
+                  setIsMultiSelectMode(prev => {
+                    if (prev) setSelectedDeckIds([]); // Reset selection on cancel
+                    return !prev;
+                  });
+                }}
+                className={`p-3.5 rounded-2xl transition duration-300 active:scale-95 flex items-center justify-center border font-bold text-xs ${
+                  isMultiSelectMode
+                    ? 'bg-primary text-white border-transparent'
+                    : isDarkMode 
+                      ? 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-850' 
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm'
+                }`}
+                title="โหมดเลือกสอบหลายสำรับ"
+                aria-label="สอบหลายสำรับ"
+              >
+                <BookOpen size={20} />
+              </button>
+            )}
 
             {/* New Deck Button */}
             <button 
@@ -203,73 +244,92 @@ export default function DeckListScreen({ onDeckSelect }) {
 
         {/* Deck Grid */}
         <div className="grid grid-cols-1 gap-4 mt-2">
-          {filteredDecks.map((deck) => (
-            <div 
-              key={deck.id}
-              onClick={() => onDeckSelect && onDeckSelect(deck.id)}
-              className={`group border rounded-[32px] p-6 transition-all duration-300 cursor-pointer active:scale-[0.99] animate-slide-up flex flex-col justify-between ${
-                isDarkMode 
-                  ? 'bg-slate-900 border-slate-800/80 hover:border-slate-700/80 hover:shadow-2xl hover:shadow-slate-950/60' 
-                  : 'bg-white border-slate-100/80 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-100/50'
-              }`}
-            >
-              <div>
-                {/* Accent Color Dot + Metadata */}
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2.5 h-2.5 rounded-full ${deck.color || 'bg-slate-900'} animate-pulse`} />
-                    <span className={`text-[10px] tracking-widest font-black uppercase ${
+          {filteredDecks.map((deck) => {
+            const isSelected = selectedDeckIds.includes(deck.id);
+            return (
+              <div 
+                key={deck.id}
+                onClick={() => handleDeckClick(deck.id)}
+                className={`group border rounded-[32px] p-6 transition-all duration-300 cursor-pointer active:scale-[0.99] animate-slide-up flex flex-col justify-between ${
+                  isSelected
+                    ? isDarkMode
+                      ? 'bg-slate-900/60 border-primary text-white shadow-[0_0_20px_rgba(99,102,241,0.15)] scale-[1.01]'
+                      : 'bg-white border-primary text-slate-900 shadow-xl shadow-primary/5 scale-[1.01]'
+                    : isDarkMode 
+                      ? 'bg-slate-900 border-slate-800/80 hover:border-slate-700/80 hover:shadow-2xl hover:shadow-slate-950/60' 
+                      : 'bg-white border-slate-100/80 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-100/50'
+                }`}
+              >
+                <div>
+                  {/* Accent Color Dot + Metadata */}
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-2">
+                      {isMultiSelectMode ? (
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                          isSelected
+                            ? 'bg-primary border-primary text-white scale-110'
+                            : isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-300 bg-slate-50'
+                        }`}>
+                          {isSelected && <span className="text-[10px] leading-none font-bold">✓</span>}
+                        </div>
+                      ) : (
+                        <span className={`w-2.5 h-2.5 rounded-full ${deck.color || 'bg-slate-900'} animate-pulse`} />
+                      )}
+                      <span className={`text-[10px] tracking-widest font-black uppercase ${
+                        isDarkMode ? 'text-slate-500' : 'text-slate-400'
+                      }`}>
+                        {isMultiSelectMode ? (isSelected ? 'SELECTED' : 'SELECT DECK') : 'ACTIVE DECK'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[10px] tracking-widest font-black uppercase border px-2 py-0.5 rounded-lg ${
+                        isDarkMode 
+                          ? 'bg-slate-950 border-slate-900 text-slate-500' 
+                          : 'bg-slate-50 border-slate-100 text-slate-400'
+                      }`}>
+                        {getLanguageTag(deck.language)}
+                      </span>
+                      <span className={`text-[10px] tracking-widest font-black uppercase px-2.5 py-0.5 rounded-lg ${
+                        isDarkMode 
+                          ? 'bg-slate-950 text-slate-400' 
+                          : 'bg-slate-100/80 text-slate-500'
+                      }`}>
+                        {deck.wordCount || 0} WORDS
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Title */}
+                  <h3 className={`text-xl font-black tracking-tight transition-colors ${
+                    isDarkMode 
+                      ? 'text-white group-hover:text-slate-200' 
+                      : 'text-slate-900 group-hover:text-slate-800'
+                  }`}>
+                    {deck.name}
+                  </h3>
+                  
+                  {/* Description */}
+                  {deck.description && (
+                    <p className={`text-xs font-medium leading-relaxed mt-2 line-clamp-2 ${
                       isDarkMode ? 'text-slate-500' : 'text-slate-400'
                     }`}>
-                      ACTIVE DECK
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-[10px] tracking-widest font-black uppercase border px-2 py-0.5 rounded-lg ${
-                      isDarkMode 
-                        ? 'bg-slate-950 border-slate-900 text-slate-500' 
-                        : 'bg-slate-50 border-slate-100 text-slate-400'
-                    }`}>
-                      {getLanguageTag(deck.language)}
-                    </span>
-                    <span className={`text-[10px] tracking-widest font-black uppercase px-2.5 py-0.5 rounded-lg ${
-                      isDarkMode 
-                        ? 'bg-slate-950 text-slate-400' 
-                        : 'bg-slate-100/80 text-slate-500'
-                    }`}>
-                      {deck.wordCount || 0} WORDS
-                    </span>
-                  </div>
+                      {deck.description}
+                    </p>
+                  )}
                 </div>
                 
-                {/* Title */}
-                <h3 className={`text-xl font-black tracking-tight transition-colors ${
-                  isDarkMode 
-                    ? 'text-white group-hover:text-slate-200' 
-                    : 'text-slate-900 group-hover:text-slate-800'
-                }`}>
-                  {deck.name}
-                </h3>
-                
-                {/* Description */}
-                {deck.description && (
-                  <p className={`text-xs font-medium leading-relaxed mt-2 line-clamp-2 ${
-                    isDarkMode ? 'text-slate-500' : 'text-slate-400'
+                {/* Vercel-Style Start Button on Hover (ปรับแก้ Responsive ให้เด่นบนมือถือและ Hover ค่อยขึ้นบน Desktop) */}
+                {!isMultiSelectMode && (
+                  <div className={`mt-6 flex items-center justify-between text-[10px] font-black tracking-wider uppercase opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 translate-y-0 md:translate-y-1 md:group-hover:translate-y-0 ${
+                    isDarkMode ? 'text-white' : 'text-slate-900'
                   }`}>
-                    {deck.description}
-                  </p>
+                    <span>START REVIEW</span>
+                    <span className="text-lg leading-none">→</span>
+                  </div>
                 )}
               </div>
-              
-              {/* Vercel-Style Start Button on Hover */}
-              <div className={`mt-6 flex items-center justify-between text-[10px] font-black tracking-wider uppercase opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-1 group-hover:translate-y-0 ${
-                isDarkMode ? 'text-white' : 'text-slate-900'
-              }`}>
-                <span>START REVIEW</span>
-                <span className="text-lg leading-none">→</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -278,6 +338,42 @@ export default function DeckListScreen({ onDeckSelect }) {
         onClose={() => setIsModalOpen(false)}
         onSave={handleCreateDeck}
       />
+
+      {/* Floating Bottom Bar for Multi-select */}
+      {isMultiSelectMode && (
+        <div className="fixed bottom-20 left-4 right-4 z-40 md:max-w-md md:mx-auto animate-slide-up">
+          <div className={`rounded-3xl p-4 flex gap-3 shadow-2xl border transition-all duration-300 ${
+            isDarkMode 
+              ? 'bg-slate-900/90 border-slate-800 backdrop-blur-md shadow-black/60' 
+              : 'bg-white/95 border-slate-100 backdrop-blur-md shadow-slate-200/80'
+          }`}>
+            <button
+              onClick={() => {
+                setIsMultiSelectMode(false);
+                setSelectedDeckIds([]);
+              }}
+              className={`flex-1 py-4 font-bold text-xs rounded-2xl transition active:scale-95 text-center ${
+                isDarkMode 
+                  ? 'bg-slate-950 text-slate-400 hover:bg-slate-800' 
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              ยกเลิก
+            </button>
+            <button
+              disabled={selectedDeckIds.length === 0}
+              onClick={() => {
+                if (onDeckSelect && selectedDeckIds.length > 0) {
+                  onDeckSelect(selectedDeckIds.join(','));
+                }
+              }}
+              className="flex-[2] bg-primary hover:bg-primary-dark disabled:bg-slate-400 text-white font-black py-4 px-6 rounded-2xl text-xs active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed text-center shadow-lg shadow-primary/20"
+            >
+              ดูข้อมูลคลังคละ ({selectedDeckIds.length})
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
